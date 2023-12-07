@@ -1,44 +1,41 @@
+import itertools
+import math
 import re
 
-def parse_input(input_string):
-    # Parse the input string and return a 2D list representing the engine schematic
-    return [list(line) for line in input_string.strip().split('\n')]
+with open("input") as f:
+    ls = f.read().strip().split("\n")
 
-def is_symbol(char):
-    # Check if a character is a symbol
-    return char in ['*', '+', '$', '#', ...]  # Add any other symbols if needed
+box = list(itertools.product((-1, 0, 1), (-1, 0, 1)))
+parts_by_symbol = {
+    (i, j): (x, [])
+    for i, l in enumerate(ls)
+    for j, x in enumerate(l)
+    if x != "." and not x.isdigit()
+}
 
-def get_adjacent_numbers(engine, row, col):
-    # Get all adjacent numbers to a given position (including diagonals)
-    rows, cols = len(engine), len(engine[0])
-    numbers = []
+part_sum = 0
 
-    for i in range(row-1, row+2):
-        for j in range(col-1, col+2):
-            if 0 <= i < rows and 0 <= j < cols and (i != row or j != col):
-                if engine[i][j].isdigit():  # Check if the character is a digit
-                    numbers.append(int(engine[i][j]))
+for i, l in enumerate(ls):
+    for match in re.finditer(r"\d+", l):
+        n = int(match.group(0))
+        boundary = {
+            (i + di, j + dj)
+            for di, dj in box
+            for j in range(match.start(), match.end())
+        }
+        if parts_by_symbol.keys() & boundary:
+            part_sum += n
+        for symbol in parts_by_symbol.keys() & boundary:
+            parts_by_symbol[symbol][1].append(n)
 
-    return numbers
+# Part 1
+print(part_sum)
 
-def find_part_numbers(engine):
-    part_numbers = set()
-
-    for i in range(len(engine)):
-        for j in range(len(engine[0])):
-            if engine[i][j].isdigit() and any(is_symbol(engine[x][y]) for x, y in get_adjacent_numbers(engine, i, j)):
-                part_numbers.add(int(engine[i][j]))
-
-    return part_numbers
-
-def sum_of_part_numbers(input_string):
-    engine = parse_input(input_string)
-    part_numbers = find_part_numbers(engine)
-    return sum(part_numbers)
-
-# Read input from file
-with open('/home/fahd/adventcode_challenge/day03/input.txt', 'r') as f:
-    input_string = f.read()
-
-result = sum_of_part_numbers(input_string)
-print(result)
+# Part 2
+print(
+    sum(
+        math.prod(parts)
+        for symbol, parts in parts_by_symbol.values()
+        if len(parts) == 2 and symbol == "*"
+    )
+)
